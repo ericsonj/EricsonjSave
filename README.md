@@ -13,6 +13,7 @@ Netbeans Project, clone this repo.
 
 ## Example
 
+### Entity
 ```
 @Entity
 @Table(name = "localizations")
@@ -73,6 +74,8 @@ public class Localization implements Serializable {
     
 }
 ```
+### DAO Facede
+
 ```
 public class LocalizationDaoFacade extends ElementLogicFacade<Localization, Long> {
 
@@ -104,7 +107,41 @@ public class LocalizationDaoFacade extends ElementLogicFacade<Localization, Long
 
 }
 ```
+### Insert Element
+```
+LocalizationDaoFacade facade = new LocalizationDaoFacade();
 
+facade.create(new Localization(502154,50,"DEP_NAME","TOWN_NAME"));
+```
+## Facade Methods
+```
+PK create(E Entity);
+
+void edit(E Entity);
+
+E find(PK id);
+
+void remove(E Entity);
+
+List<E> findAllByCriteria(CriteriaQuery crQuery);
+
+E findByCriteria(CriteriaQuery crQuery);
+
+void executeQuery(String query);
+
+void insertBatch(int batchSize, RunnableBatch<E> runnableBatch);
+
+List<E> findByQuery(String query, Object... params)
+
+E findByProperty(String property, Object obj)
+
+List<E> findAllByProperty(String property, Object obj)
+
+List<E> findAll()
+
+void insertBatch(int batchSize, LinkedList<E> list)
+
+```
 
 
 
