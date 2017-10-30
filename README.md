@@ -142,8 +142,9 @@ List<E> findAll()
 void insertBatch(int batchSize, LinkedList<E> list)
 
 ```
+## Authors
 
-
+* **Ericson Joseph** - *Initial work* - [EricsonjSave](https://github.com/ericsonj/EricsonjSave)
 
 
 
