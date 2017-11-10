@@ -2,6 +2,7 @@ package net.ericsonj.save;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
+import java.math.BigInteger;
 import java.util.List;
 import javax.persistence.Table;
 import org.hibernate.Criteria;
@@ -9,6 +10,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.criterion.Projections;
 
 /**
  *
@@ -186,7 +188,6 @@ public class ElementTransactionLogicFacade<E, PK extends Serializable> implement
                 crQuery.addCriterion(cr);
             }
             List<E> entitys = cr.list();
-            tx.commit();
             return entitys;
         } catch (Throwable e) {
             throw new HibernateException(e);
@@ -223,7 +224,6 @@ public class ElementTransactionLogicFacade<E, PK extends Serializable> implement
                 crQuery.addCriterion(cr);
             }
             E entitys = (E) cr.uniqueResult();
-            tx.commit();
             return entitys;
         } catch (Throwable e) {
             throw new HibernateException(e);
@@ -258,6 +258,144 @@ public class ElementTransactionLogicFacade<E, PK extends Serializable> implement
         }
     }
 
+    public long getCount() {
+        if (!isTransactional) {
+            try {
+                this.initOperation();
+                tx = session.beginTransaction();
+                Criteria cr = session.createCriteria(elementType);
+                cr.setProjection(Projections.rowCount());
+                long count = (Long) cr.uniqueResult();
+                tx.commit();
+                return count;
+            } catch (Throwable e) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+                throw new HibernateException(e);
+            } finally {
+                session.close();
+            }
+        }
+
+        try {
+            Criteria cr = session.createCriteria(elementType);
+            cr.setProjection(Projections.rowCount());
+            long count = (Long) cr.uniqueResult();
+            return count;
+        } catch (Throwable e) {
+            throw new HibernateException(e);
+        }
+
+    }
+
+    /**
+     * Find by string query.
+     * <pre>
+     * {@code
+     * List<User> users = facade.findByquery(getSelectQuery() + " WHERE localization = ? ","Bogota")
+     * }
+     * </pre>
+     *
+     * @param query
+     * @param params
+     * @return
+     */
+    public List<E> findByQuery(String query, Object... params) {
+        if (!isTransactional) {
+            try {
+                this.initOperation();
+                tx = session.beginTransaction();
+                SQLQuery sqlQuery = session.createSQLQuery(query);
+                sqlQuery.addEntity(elementType);
+
+                int i = 0;
+                for (Object param : params) {
+                    sqlQuery.setParameter(i, param);
+                    i++;
+                }
+
+                List<E> entitys = sqlQuery.list();
+                tx.commit();
+                return entitys;
+            } catch (Throwable e) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+                throw new HibernateException(e);
+            } finally {
+                session.close();
+            }
+        }
+
+        try {
+            SQLQuery sqlQuery = session.createSQLQuery(query);
+            sqlQuery.addEntity(elementType);
+
+            int i = 0;
+            for (Object param : params) {
+                sqlQuery.setParameter(i, param);
+                i++;
+            }
+
+            List<E> entitys = sqlQuery.list();
+            return entitys;
+        } catch (Throwable e) {
+            throw new HibernateException(e);
+        }
+    }
+
+    public long getCountQuery(String query, Object... params) {
+        if (!isTransactional) {
+            try {
+                this.initOperation();
+                tx = session.beginTransaction();
+                SQLQuery sqlQuery = session.createSQLQuery(query);
+                
+                int i = 0;
+                for (Object param : params) {
+                    sqlQuery.setParameter(i, param);
+                    i++;
+                }
+
+                long count = ((BigInteger) sqlQuery.uniqueResult()).longValue();
+                tx.commit();
+                return count;
+            } catch (Throwable e) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+                throw new HibernateException(e);
+            } finally {
+                session.close();
+            }
+        }
+        try {
+            SQLQuery sqlQuery = session.createSQLQuery(query);
+            sqlQuery.addEntity(elementType);
+
+            int i = 0;
+            for (Object param : params) {
+                sqlQuery.setParameter(i, param);
+                i++;
+            }
+
+            long count = ((BigInteger) sqlQuery.uniqueResult()).longValue();
+            return count;
+        } catch (Throwable e) {
+            throw new HibernateException(e);
+        }
+    }
+
+    /**
+     * Get count query, SELECT count(*) FROM table
+     *
+     * @return
+     */
+    public String getCountQuery() {
+        return " SELECT count(*) FROM " + getTableName() + " ";
+    }
+
     /**
      * Get select query, SELECT * FROM table
      *
@@ -282,9 +420,10 @@ public class ElementTransactionLogicFacade<E, PK extends Serializable> implement
 
     /**
      * Insert in batch mode from RunnableBatch implementation.
+     *
      * @param batchSize
      * @param runnableBatch
-     * @throws HibernateException 
+     * @throws HibernateException
      */
     @Override
     public void insertBatch(int batchSize, RunnableBatch<E> runnableBatch) throws HibernateException {

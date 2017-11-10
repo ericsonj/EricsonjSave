@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
-import org.hibernate.SQLQuery;
 import org.hibernate.criterion.Restrictions;
 
 /**
@@ -19,11 +18,11 @@ public class ElementLogicFacade<E, PK extends Serializable> extends ElementTrans
     public ElementLogicFacade() {
         super();
     }
-    
+
     public ElementLogicFacade(SaveTransaction sf) {
         super(sf);
     }
-    
+
     /**
      * Insert in batch mode from LinkedList
      *
@@ -85,44 +84,6 @@ public class ElementLogicFacade<E, PK extends Serializable> extends ElementTrans
                 cr.add(Restrictions.eq(property, obj));
             }
         });
-    }
-
-    /**
-     * Find by string query.
-     * <pre>
-     * {@code
-     * List<User> users = facade.findByquery(getSelectQuery() + " WHERE localization = ? ","Bogota")
-     * }
-     * </pre>
-     *
-     * @param query
-     * @param params
-     * @return
-     */
-    public List<E> findByQuery(String query, Object... params) {
-        try {
-            super.initOperation();
-            tx = session.beginTransaction();
-            SQLQuery sqlQuery = session.createSQLQuery(query);
-            sqlQuery.addEntity(elementType);
-
-            int i = 0;
-            for (Object param : params) {
-                sqlQuery.setParameter(i, param);
-                i++;
-            }
-
-            List<E> entitys = sqlQuery.list();
-            tx.commit();
-            return entitys;
-        } catch (Throwable e) {
-            if (tx != null) {
-                tx.rollback();
-            }
-            throw new HibernateException(e);
-        } finally {
-            session.close();
-        }
     }
 
 }
